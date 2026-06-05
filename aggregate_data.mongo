@@ -1,0 +1,78 @@
+db.raw_match_results.aggregate([
+  {
+    $group: {
+      _id: "$MatchCode",
+      Format: { $first: "$Format" },
+      Week: { $first: "$Week" },
+      Time: { $first: "$Time" },
+      Score: { $first: "$Score" },
+      weeks_in_league: { $first: "$weeks_in_league" },
+      team_league: { $first: "$team_league" },
+      players_data: { $push: "$$ROOT" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      MatchCode: "$_id",
+      Format: 1,
+      Week: 1,
+      Time: 1,
+      Score: 1,
+      weeks_in_league: 1,
+      team_league: 1,
+      winning_player: {
+        $let: {
+          vars: { winner: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Win"] } } } },
+          in: { $arrayElemAt: ["$$winner.Player", 0] }
+        }
+      },
+      winner_n_matches: {
+        $let: {
+          vars: { winner: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Win"] } } } },
+          in: { $arrayElemAt: ["$$winner.n_matches", 0] }
+        }
+      },
+      winner_n_wins: {
+        $let: {
+          vars: { winner: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Win"] } } } },
+          in: { $arrayElemAt: ["$$winner.n_wins", 0] }
+        }
+      },
+      winner_n_losses: {
+        $let: {
+          vars: { winner: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Win"] } } } },
+          in: { $arrayElemAt: ["$$winner.n_losses", 0] }
+        }
+      },
+      losing_player: {
+        $let: {
+          vars: { loser: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Loss"] } } } },
+          in: { $arrayElemAt: ["$$loser.Player", 0] }
+        }
+      },
+      loser_n_matches: {
+        $let: {
+          vars: { loser: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Loss"] } } } },
+          in: { $arrayElemAt: ["$$loser.n_matches", 0] }
+        }
+      },
+      loser_n_wins: {
+        $let: {
+          vars: { loser: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Loss"] } } } },
+          in: { $arrayElemAt: ["$$loser.n_wins", 0] }
+        }
+      },
+      loser_n_losses: {
+        $let: {
+          vars: { loser: { $filter: { input: "$players_data", as: "p", cond: { $eq: ["$$p.Result", "Loss"] } } } },
+          in: { $arrayElemAt: ["$$loser.n_losses", 0] }
+        }
+      }
+    }
+  },
+  {
+    $out: "combined_matches"
+  }
+])
+
